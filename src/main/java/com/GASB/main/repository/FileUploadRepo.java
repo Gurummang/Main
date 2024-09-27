@@ -12,10 +12,27 @@ import java.util.Optional;
 @Repository
 public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
 
-    @Query("SELECT fu.orgSaaS.org.id FROM FileUpload fu WHERE fu.id = :uploadId")
-    Long findOrgIdByUploadId(@Param("uploadId") long uploadId);
+    @Query("SELECT COUNT(DISTINCT fu) " +
+            "FROM FileUpload fu " +
+            "JOIN fu.orgSaaS os " +
+            "JOIN fu.storedFile sf " +
+            "JOIN sf.dlpReport dr " +
+            "WHERE fu.deleted = false "+
+            "AND sf.id IN ( " +
+            "   SELECT DISTINCT d.storedFile.id " +
+            "   FROM DlpReport d " +
+            "   WHERE d.infoCnt >= 1 " +
+            "   AND d.policy.orgSaaS.org.id = :orgId " +
+            ") " +
+            "AND os.org.id = :orgId")
+    int countDlpIssuesByOrgId(@Param("orgId") Long orgId);
 
-    @EntityGraph(attributePaths = {"storedFile.dlpReport"})
-    @Query("SELECT f FROM FileUpload f WHERE f.id = :uploadId")
-    Optional<FileUpload> findByIdWithDlpReport(@Param("uploadId") long uploadId);
+    @Query("SELECT COUNT(fu.id) FROM FileUpload fu JOIN OrgSaaS os ON fu.orgSaaS.id = os.id WHERE fu.deleted = false AND os.org.id = :orgId")
+    int countFileByOrgId(@Param("orgId") Long orgId);
+
+    @Query("SELECT SUM(sf.size) FROM FileUpload fu " +
+            "JOIN StoredFile sf ON fu.hash = sf.saltedHash " +
+            "JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
+            "WHERE fu.deleted = false AND os.org.id = :orgId")
+    int getTotalSizeByOrgId(@Param("orgId") long orgId);
 }
