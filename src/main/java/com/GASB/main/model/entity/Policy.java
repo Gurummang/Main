@@ -22,7 +22,7 @@ public class Policy {
 
     @ManyToOne
     @JoinColumn(name = "org_saas_id", referencedColumnName = "id", nullable = false)
-    private OrgSaaS orgSaas; // OrgSaaS와의 ManyToOne 관계
+    private OrgSaaS orgSaaS; // OrgSaaS와의 ManyToOne 관계
 
     @Column(name = "policy_name")
     private String policyName;
