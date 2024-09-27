@@ -1,6 +1,5 @@
 package com.GASB.main.model.entity;
 
-import com.GASB.alerts.model.dto.request.SetEmailRequest;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -36,16 +35,5 @@ public class AlertSettings {
 
     @OneToMany(mappedBy = "alertSettings", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AlertEmails> alertEmails;
-
-    public static AlertSettings toEntity(SetEmailRequest dto, AdminUsers adminUsers){
-        return AlertSettings.builder()
-                .adminUsers(adminUsers)
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .suspicious(dto.isSuspicious())
-                .dlp(dto.isSensitive())
-                .vt(dto.isVt())
-                .build();
-    }
 
 }
