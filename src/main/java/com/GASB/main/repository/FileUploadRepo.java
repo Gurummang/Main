@@ -29,6 +29,27 @@ public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
     @Query("SELECT COUNT(fu.id) FROM FileUpload fu JOIN OrgSaaS os ON fu.orgSaaS.id = os.id WHERE fu.deleted = false AND os.org.id = :orgId")
     int countFileByOrgId(@Param("orgId") Long orgId);
 
+    @Query("SELECT COUNT(fu.id) " +
+            "FROM FileUpload fu " +
+            "LEFT JOIN fu.storedFile sf " +
+            "LEFT JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
+            "WHERE fu.deleted = false AND sf.fileStatus.gscanStatus = 1 AND os.org.id = :orgId")
+    int countSuspiciousFileByOrgId(@Param("orgId") Long orgId);
+
+    @Query("SELECT COUNT(fu.id) " +
+        "FROM FileUpload fu " +
+        "LEFT JOIN fu.storedFile sf " +
+        "LEFT JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
+        "WHERE fu.deleted = false AND sf.fileStatus.dlpStatus = 1 AND os.org.id = :orgId")
+    int countDlpFileByOrgId(@Param("orgId") long orgId);
+
+    @Query("SELECT COUNT(fu.id) " +
+            "FROM FileUpload fu " +
+            "LEFT JOIN fu.storedFile sf " +
+            "LEFT JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
+            "WHERE fu.deleted = false AND sf.fileStatus.vtStatus = 1 AND os.org.id = :orgId")
+    int countVtFileByOrgId(@Param("orgId") long orgId);
+
     @Query("SELECT SUM(sf.size) FROM FileUpload fu " +
             "JOIN StoredFile sf ON fu.hash = sf.saltedHash " +
             "JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
