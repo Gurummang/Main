@@ -41,7 +41,7 @@ public class MainController {
     }
 
     @ValidateJWT
-    @GetMapping("/info")
+    @GetMapping("/total")
     public ResponseDto<MainInfoDto> getInfo(HttpServletRequest servletRequest){
         try {
             Optional<AdminUsers> adminOptional = getAdminUser(servletRequest);

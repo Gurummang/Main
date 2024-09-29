@@ -1,13 +1,12 @@
 package com.GASB.main.repository;
 
 import com.GASB.main.model.entity.FileUpload;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import java.time.LocalDate;
 
 @Repository
 public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
@@ -34,5 +33,27 @@ public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
             "JOIN StoredFile sf ON fu.hash = sf.saltedHash " +
             "JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
             "WHERE fu.deleted = false AND os.org.id = :orgId")
-    int getTotalSizeByOrgId(@Param("orgId") long orgId);
+    long getTotalSizeByOrgId(@Param("orgId") long orgId);
+
+    @Query("SELECT COUNT(fu) FROM FileUpload fu " +
+            "JOIN fu.orgSaaS os " +
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND DATE(fu.timestamp) <= :endDate")
+    int getTotalCountUntil(@Param("orgId") long orgId, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(sf.size), 0) FROM FileUpload fu " +
+            "JOIN StoredFile sf ON fu.hash = sf.saltedHash " +
+            "JOIN fu.orgSaaS os " +
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND DATE(fu.timestamp) <= :endDate")
+    long getTotalSizeUntil(@Param("orgId") long orgId, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COALESCE(SUM(sf.size), 0) FROM FileUpload fu " +
+            "JOIN StoredFile sf ON fu.hash = sf.saltedHash " +
+            "JOIN fu.orgSaaS os " +
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND os.saas.saasName = :saasName AND DATE(fu.timestamp) <= :endDate")
+    long getTotalSizeUntilByOrgAndSaaS(@Param("orgId") long orgId, @Param("saasName") String saasName, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(fu) FROM FileUpload fu " +
+            "JOIN fu.orgSaaS os " +
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND os.saas.saasName = :saasName AND DATE(fu.timestamp) <= :endDate")
+    int getTotalUploadUntilByOrgAndSaaS(@Param("orgId") long orgId, @Param("saasName") String saasName, @Param("endDate") LocalDate endDate);
 }

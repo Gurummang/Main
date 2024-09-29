@@ -17,6 +17,9 @@ public class MainInfoDto {
     private int totalDlp;
     private int totalUser;
     private int totalFile;
-    private int totalFileSize;
-    private List<AdminInfo> admin;
+    private int dailyFileCountDifference;
+    private long totalFileSize;
+    private long dailyFileSizeDifference;
+    private List<FileSizeBySaaS> fileSizeBySaaS;
+    private List<FileUploadBySaaS> fileUploadBySaaS;
 }
