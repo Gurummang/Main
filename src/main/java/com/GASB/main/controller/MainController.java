@@ -4,9 +4,11 @@ import com.GASB.main.annotation.JWT.ValidateJWT;
 import com.GASB.main.exception.InvalidJwtException;
 import com.GASB.main.model.dto.ResponseDto;
 import com.GASB.main.model.dto.info.MainInfoDto;
+import com.GASB.main.model.dto.statistics.MainStatisticsDto;
 import com.GASB.main.model.entity.AdminUsers;
 import com.GASB.main.repository.AdminUsersRepo;
 import com.GASB.main.service.MainInfoService;
+import com.GASB.main.service.MainStatisticsService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,10 +28,12 @@ public class MainController {
     private final AdminUsersRepo adminUsersRepo;
 
     private final MainInfoService mainInfoService;
+    private final MainStatisticsService mainStatisticsService;
 
-    public MainController(AdminUsersRepo adminUsersRepo, MainInfoService mainInfoService){
+    public MainController(AdminUsersRepo adminUsersRepo, MainInfoService mainInfoService, MainStatisticsService mainStatisticsService){
         this.adminUsersRepo = adminUsersRepo;
         this.mainInfoService = mainInfoService;
+        this.mainStatisticsService = mainStatisticsService;
     }
 
     private Optional<AdminUsers> getAdminUser(HttpServletRequest servletRequest) {
@@ -51,6 +55,23 @@ public class MainController {
 
             long orgId = adminOptional.get().getOrg().getId();
             MainInfoDto result = mainInfoService.getInfo(orgId);
+            return ResponseDto.ofSuccess(result);
+        } catch (RuntimeException e){
+            return ResponseDto.ofFail(e.getMessage());
+        }
+    }
+
+    @ValidateJWT
+    @GetMapping("/statistics")
+    public ResponseDto<MainStatisticsDto> getStatistics(HttpServletRequest servletRequest){
+        try {
+            Optional<AdminUsers> adminOptional = getAdminUser(servletRequest);
+            if (adminOptional.isEmpty()) {
+                return ResponseDto.ofFail(EMAIL_NOT_FOUND);
+            }
+
+            long orgId = adminOptional.get().getOrg().getId();
+            MainStatisticsDto result = mainStatisticsService.getStatistics(orgId);
             return ResponseDto.ofSuccess(result);
         } catch (RuntimeException e){
             return ResponseDto.ofFail(e.getMessage());
