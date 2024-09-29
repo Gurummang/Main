@@ -1,5 +1,7 @@
 package com.GASB.main.service;
 
+import com.GASB.main.model.dto.info.FileSizeBySaaS;
+import com.GASB.main.model.dto.info.FileUploadBySaaS;
 import com.GASB.main.model.dto.info.MainInfoDto;
 import com.GASB.main.model.dto.info.SaaSInfo;
 import com.GASB.main.model.entity.OrgSaaS;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -35,9 +38,11 @@ public class MainInfoService {
                 .totalDlp(totalDlpCount(orgId))
                 .totalUser(totalUsersCount(orgId))
                 .totalFile(totalFilesCount(orgId))
-                .dailyIncreaseFileCount(increasedFile(orgId))
+                .dailyFileCountDifference(increasedFile(orgId))
                 .totalFileSize(totalFileSizeCount(orgId))
-                .dailyIncreaseFileSize(increasedFileSize(orgId))
+                .dailyFileSizeDifference(increasedFileSize(orgId))
+                .fileSizeBySaaS(getFileSizeBySaaS(orgId))
+                .fileUploadBySaaS(getFileUplooadBySaaS(orgId))
                 .build();
     }
 
@@ -118,4 +123,56 @@ public class MainInfoService {
                 .email(orgSaaS.getConfig().getSaasAdminEmail())
                 .build();
     }
+
+    private List<FileSizeBySaaS> getFileSizeBySaaS(long orgId){
+        List<String> saasNameList = orgSaaSRepo.findDistinctSaaSByOrgId(orgId);
+
+        return saasNameList.stream()
+                .map(saasName -> getFileSize(saasName, orgId))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private FileSizeBySaaS getFileSize(String saasName, long orgId){
+        LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
+
+        long totalSizeUntilYesterday = fileUploadRepo.getTotalSizeUntilByOrgAndSaaS(orgId, saasName, yesterday);
+        long totalSizeUntilToday = fileUploadRepo.getTotalSizeUntilByOrgAndSaaS(orgId, saasName, today);
+
+        long dailyDifference = totalSizeUntilToday - totalSizeUntilYesterday;
+
+        return FileSizeBySaaS.builder()
+                .saas(saasName)
+                .size(totalSizeUntilToday)
+                .dailyDifference(dailyDifference)
+                .build();
+    }
+
+    private List<FileUploadBySaaS> getFileUplooadBySaaS(long orgId){
+        List<String> saasNameList = orgSaaSRepo.findDistinctSaaSByOrgId(orgId);
+
+        return saasNameList.stream()
+                .map(saasName -> getFileUpload(saasName, orgId))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private FileUploadBySaaS getFileUpload(String saasName, long orgId){
+        LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
+
+        int totalUploadUntilYesterday = fileUploadRepo.getTotalUploadUntilByOrgAndSaaS(orgId, saasName, yesterday);
+        int totalUploadUntilToday = fileUploadRepo.getTotalUploadUntilByOrgAndSaaS(orgId, saasName, today);
+
+        int dailyDifference = totalUploadUntilToday - totalUploadUntilYesterday;
+
+        return  FileUploadBySaaS.builder()
+                .saas(saasName)
+                .upload(totalUploadUntilToday)
+                .dailyDifference(dailyDifference)
+                .build();
+
+    }
+
 }

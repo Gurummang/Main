@@ -46,4 +46,14 @@ public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
             "WHERE fu.deleted = false AND os.org.id = :orgId AND DATE(fu.timestamp) <= :endDate")
     long getTotalSizeUntil(@Param("orgId") long orgId, @Param("endDate") LocalDate endDate);
 
+    @Query("SELECT COALESCE(SUM(sf.size), 0) FROM FileUpload fu " +
+            "JOIN StoredFile sf ON fu.hash = sf.saltedHash " +
+            "JOIN fu.orgSaaS os " +
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND os.saas.saasName = :saasName AND DATE(fu.timestamp) <= :endDate")
+    long getTotalSizeUntilByOrgAndSaaS(@Param("orgId") long orgId, @Param("saasName") String saasName, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(fu) FROM FileUpload fu " +
+            "JOIN fu.orgSaaS os " +
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND os.saas.saasName = :saasName AND DATE(fu.timestamp) <= :endDate")
+    int getTotalUploadUntilByOrgAndSaaS(@Param("orgId") long orgId, @Param("saasName") String saasName, @Param("endDate") LocalDate endDate);
 }
