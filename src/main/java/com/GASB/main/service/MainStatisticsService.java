@@ -3,11 +3,9 @@ package com.GASB.main.service;
 import com.GASB.main.model.dto.statistics.*;
 import com.GASB.main.model.entity.*;
 import com.GASB.main.repository.ActivitiesRepo;
-import com.GASB.main.repository.DlpReportRepo;
 import com.GASB.main.repository.FileUploadRepo;
 import com.GASB.main.repository.OrgSaaSRepo;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.loader.JdbcLeakPrevention;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -30,13 +28,11 @@ public class MainStatisticsService {
     private final FileUploadRepo fileUploadRepo;
     private final ActivitiesRepo activitiesRepo;
     private final OrgSaaSRepo orgSaaSRepo;
-    private final DlpReportRepo dlpReportRepo;
 
-    public MainStatisticsService(FileUploadRepo fileUploadRepo, ActivitiesRepo activitiesRepo, OrgSaaSRepo orgSaaSRepo, DlpReportRepo dlpReportRepo){
+    public MainStatisticsService(FileUploadRepo fileUploadRepo, ActivitiesRepo activitiesRepo, OrgSaaSRepo orgSaaSRepo){
         this.fileUploadRepo = fileUploadRepo;
         this.activitiesRepo = activitiesRepo;
         this.orgSaaSRepo = orgSaaSRepo;
-        this.dlpReportRepo = dlpReportRepo;
     }
 
     public MainStatisticsDto getStatistics(long orgId){
@@ -108,7 +104,7 @@ public class MainStatisticsService {
             long storedFileId = storedFile.getId();
 
             List<DlpReport> relatedReports = dlpReports.stream()
-                    .filter(dlpReport -> dlpReport.getStoredFile().getId() == storedFileId) // storedFile의 ID와 일치하는 DlpReport 필터링
+                    .filter(dlpReport -> dlpReport.getStoredFile().getId() == storedFileId)
                     .toList();
 
             boolean hasSensitiveInfo = relatedReports.stream()

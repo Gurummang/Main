@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -47,5 +49,4 @@ public class Policy {
 
     @OneToMany(mappedBy = "policy")
     private Set<DlpReport> dlpReports; // DlpReport와의 OneToMany 관계
-
 }
