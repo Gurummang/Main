@@ -10,4 +10,7 @@ import java.util.List;
 
 @Repository
 public interface DlpReportRepo extends JpaRepository<DlpReport, Long> {
+
+    @Query("SELECT d FROM DlpReport d JOIN d.storedFile s WHERE d.policy.orgSaaS.org.id = :orgId")
+    List<DlpReport> findAllDlpReportsByOrgAndDate(@Param("orgId") long orgId);
 }

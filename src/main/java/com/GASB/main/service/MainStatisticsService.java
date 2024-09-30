@@ -1,39 +1,133 @@
 package com.GASB.main.service;
 
-import com.GASB.main.model.dto.statistics.FileAnalysis;
-import com.GASB.main.model.dto.statistics.FileHistoryInfo;
-import com.GASB.main.model.dto.statistics.MainStatisticsDto;
-import com.GASB.main.model.entity.Activities;
+import com.GASB.main.model.dto.statistics.*;
+import com.GASB.main.model.entity.*;
 import com.GASB.main.repository.ActivitiesRepo;
+import com.GASB.main.repository.DlpReportRepo;
 import com.GASB.main.repository.FileUploadRepo;
 import com.GASB.main.repository.OrgSaaSRepo;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.loader.JdbcLeakPrevention;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
+@Slf4j
 public class MainStatisticsService {
+
+    private static final String UNKNOWN = "Unknown";
 
     private final FileUploadRepo fileUploadRepo;
     private final ActivitiesRepo activitiesRepo;
     private final OrgSaaSRepo orgSaaSRepo;
+    private final DlpReportRepo dlpReportRepo;
 
-    public MainStatisticsService(FileUploadRepo fileUploadRepo, ActivitiesRepo activitiesRepo, OrgSaaSRepo orgSaaSRepo){
+    public MainStatisticsService(FileUploadRepo fileUploadRepo, ActivitiesRepo activitiesRepo, OrgSaaSRepo orgSaaSRepo, DlpReportRepo dlpReportRepo){
         this.fileUploadRepo = fileUploadRepo;
         this.activitiesRepo = activitiesRepo;
         this.orgSaaSRepo = orgSaaSRepo;
+        this.dlpReportRepo = dlpReportRepo;
     }
 
     public MainStatisticsDto getStatistics(long orgId){
         return MainStatisticsDto.builder()
-                .fileScanInToday(new ArrayList<>())
+                .fileScanInToday(getFileScan(orgId))
                 .fileAnalysis(getFileAnalysis(orgId))
                 .fileHistoryInfo(getFileHistoryInfo(orgId))
-                .fileHistoryStatistics(new ArrayList<>())
+                .fileHistoryStatistics(getLast12Months(orgId))
                 .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<FileScanDto> getFileScan(long orgId) {
+        LocalDate today = LocalDate.now();
+
+        List<Object[]> fileUploadsWithDlpReports = fileUploadRepo.findFileUploadsWithDlpReports(orgId, today);
+
+        return fileUploadsWithDlpReports.stream()
+                .map(objects -> createFileListDto((FileUpload) objects[0], (List<DlpReport>) objects[1]))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private FileScanDto createFileListDto(FileUpload fileUpload, List<DlpReport> dlpReports) {
+        StoredFile storedFile = fileUpload.getStoredFile();
+
+        Activities activities = getActivities(fileUpload.getSaasFileId(), fileUpload.getTimestamp());
+        if (activities == null) {
+            log.debug("No Activities found for fileUpload id: {}", fileUpload.getId());
+        }
+
+        LocalDateTime adjustedTimestamp = fileUpload.getTimestamp().minusHours(9);
+
+        String creator = Optional.ofNullable(activities)
+                .map(Activities::getUser)
+                .map(MonitoredUsers::getUserName)
+                .orElse(UNKNOWN);
+
+        return FileScanDto.builder()
+                .saas(fileUpload.getOrgSaaS().getSaas().getSaasName())
+                .fileName(activities != null ? activities.getFileName() : UNKNOWN)
+                .suspicious(isSuspicious(fileUpload, storedFile))
+                .vt(isMalware(storedFile))
+                .dlp(isSensitive(storedFile, dlpReports))
+                .creator(creator)
+                .eventTs(adjustedTimestamp)
+                .build();
+    }
+
+    private int isMalware(StoredFile storedFile) {
+        if(storedFile.getFileStatus().getVtStatus() == 1) {
+            VtReport vtReport = storedFile.getVtReport();
+            if(vtReport != null && !"none".equals(vtReport.getThreatLabel())){
+                return 2;
+            }
+        }
+        return storedFile.getFileStatus().getVtStatus();
+    }
+
+    private int isSuspicious(FileUpload fileUpload, StoredFile storedFile){
+        if(storedFile.getFileStatus().getGscanStatus() == 1 && (fileUpload.getTypeScan().getCorrect().equals(false) || storedFile.getScanTable().isDetected())){
+            return 2;
+        }
+        return storedFile.getFileStatus().getGscanStatus();
+    }
+
+    private int isSensitive(StoredFile storedFile, List<DlpReport> dlpReports) {
+        if (storedFile.getFileStatus().getDlpStatus() == 1) {
+            long storedFileId = storedFile.getId();
+
+            List<DlpReport> relatedReports = dlpReports.stream()
+                    .filter(dlpReport -> dlpReport.getStoredFile().getId() == storedFileId) // storedFile의 ID와 일치하는 DlpReport 필터링
+                    .toList();
+
+            boolean hasSensitiveInfo = relatedReports.stream()
+                    .anyMatch(dlpReport -> dlpReport.getInfoCnt() >= 1);
+
+            if (hasSensitiveInfo) {
+                return 2;
+            }
+        }
+
+        return storedFile.getFileStatus().getGscanStatus();
+    }
+
+    private Activities getActivities(String saasFileId, LocalDateTime timestamp) {
+        Activities activities = activitiesRepo.findAllBySaasFileIdAndTimeStamp(saasFileId, timestamp);
+        if (activities == null) {
+            log.info("No activities found for saasFileId: {} and timestamp: {}", saasFileId, timestamp);
+        }
+        return activities;
     }
 
     private FileAnalysis getFileAnalysis(long orgId){
@@ -72,5 +166,24 @@ public class MainStatisticsService {
                 .delete(delete)
                 .lastActivity(lastActivity)
                 .build();
+    }
+
+    private List<DailyFileHistory> getLast12Months(long orgId) {
+        List<Activities> activities = activitiesRepo.findByOrgId(orgId);
+        LocalDate currentMonth = LocalDate.now().withDayOfMonth(1);
+        List<String> last12Months = IntStream.range(0, 12)
+                .mapToObj(currentMonth::minusMonths)
+                .map(date -> date.format(DateTimeFormatter.ofPattern("yyyy-MM")))
+                .toList();
+
+        Map<String, Long> monthlyTotalMap = activities.stream()
+                .collect(Collectors.groupingBy(
+                        activity -> activity.getEventTs().format(DateTimeFormatter.ofPattern("yyyy-MM")),
+                        Collectors.counting()
+                ));
+
+        return last12Months.stream()
+                .map(month -> new DailyFileHistory(month, monthlyTotalMap.getOrDefault(month, 0L)))
+                .toList();
     }
 }
