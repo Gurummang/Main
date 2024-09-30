@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Repository
 public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
@@ -77,4 +78,13 @@ public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
             "JOIN fu.orgSaaS os " +
             "WHERE fu.deleted = false AND os.org.id = :orgId AND os.saas.saasName = :saasName AND DATE(fu.timestamp) <= :endDate")
     int getTotalUploadUntilByOrgAndSaaS(@Param("orgId") long orgId, @Param("saasName") String saasName, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT fu FROM FileUpload fu " +
+            "JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
+            "WHERE fu.deleted = false AND DATE(fu.timestamp) = :date AND os.org.id = :orgId")
+    List<FileUpload> findAllByOrgAndDate(@Param("orgId") long orgId, @Param("date") LocalDate date);
+
+    @Query("SELECT fu, dr FROM FileUpload fu LEFT JOIN DlpReport dr ON fu.storedFile.id = dr.storedFile.id WHERE fu.orgSaaS.org.Id = :orgId AND DATE(fu.timestamp) = :date")
+    List<Object[]> findFileUploadsWithDlpReports(@Param("orgId") long orgId, @Param("date") LocalDate date);
+
 }

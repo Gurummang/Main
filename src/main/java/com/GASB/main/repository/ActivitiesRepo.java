@@ -39,4 +39,7 @@ public interface ActivitiesRepo extends JpaRepository<Activities, Long> {
             "LEFT JOIN mu.orgSaaS os " +
             "WHERE os.org.id = :orgId AND os.saas.saasName = :saas")
     LocalDate findLastActivityByOrgAndSaaS(@Param("orgId") long orgId, @Param("saas") String saas);
+
+    @Query("SELECT a FROM Activities a WHERE a.user.orgSaaS.org.id = :orgId")
+    List<Activities> findByOrgId(@Param("orgId") long orgId);
 }

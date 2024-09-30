@@ -11,11 +11,12 @@ import java.time.LocalDateTime;
 @Builder
 public class FileScanDto {
 
+    private String saas;
     private String fileName;
     private int suspicious;
     private int dlp;
     private int vt;
     private String creator;
-    private LocalDateTime createdAt;
+    private LocalDateTime eventTs;
 
 }
