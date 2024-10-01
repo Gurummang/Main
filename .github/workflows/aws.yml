@@ -77,7 +77,7 @@ jobs:
         # Prepare application.properties
         mkdir -p src/main/resources
         
-        echo "${{ secrets.SLACKPROPERTIES }}" > ./src/main/resources/application.properties
+        echo "${{ secrets.MAINPROPERTIES }}" > ./src/main/resources/application.properties
         cat ./src/main/resources/application.properties
 
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
