@@ -84,7 +84,7 @@ public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
             "WHERE fu.deleted = false AND DATE(fu.timestamp) = :date AND os.org.id = :orgId")
     List<FileUpload> findAllByOrgAndDate(@Param("orgId") long orgId, @Param("date") LocalDate date);
 
-    @Query("SELECT fu, dr FROM FileUpload fu LEFT JOIN DlpReport dr ON fu.storedFile.id = dr.storedFile.id WHERE fu.orgSaaS.org.Id = :orgId AND DATE(fu.timestamp) = :date")
+    @Query("SELECT fu, dr FROM FileUpload fu LEFT JOIN DlpReport dr ON fu.storedFile.id = dr.storedFile.id WHERE fu.orgSaaS.org.Id = :orgId AND DATE(fu.timestamp) = :date GROUP BY fu")
     List<Object[]> findFileUploadsWithDlpReports(@Param("orgId") long orgId, @Param("date") LocalDate date);
 
 }

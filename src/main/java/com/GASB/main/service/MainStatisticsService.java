@@ -12,10 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -50,11 +47,25 @@ public class MainStatisticsService {
 
         List<Object[]> fileUploadsWithDlpReports = fileUploadRepo.findFileUploadsWithDlpReports(orgId, today);
 
-        return fileUploadsWithDlpReports.stream()
-                .map(objects -> createFileListDto((FileUpload) objects[0], (List<DlpReport>) objects[1]))
+        // FileUpload를 키로, DlpReport 리스트를 값으로 변환
+        Map<FileUpload, List<DlpReport>> fileToDlpReports = new HashMap<>();
+        for (Object[] result : fileUploadsWithDlpReports) {
+            FileUpload fileUpload = (FileUpload) result[0];
+            DlpReport dlpReport = (DlpReport) result[1];
+
+            // Map에 FileUpload를 키로 DlpReport를 리스트로 추가
+            fileToDlpReports
+                    .computeIfAbsent(fileUpload, k -> new ArrayList<>())
+                    .add(dlpReport);
+        }
+
+        // 각 FileUpload에 대해 중복되지 않는 FileScanDto 생성
+        return fileToDlpReports.entrySet().stream()
+                .map(entry -> createFileListDto(entry.getKey(), entry.getValue()))
                 .filter(Objects::nonNull)
                 .toList();
     }
+
 
     private FileScanDto createFileListDto(FileUpload fileUpload, List<DlpReport> dlpReports) {
         StoredFile storedFile = fileUpload.getStoredFile();
