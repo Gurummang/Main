@@ -1,23 +1,22 @@
 package com.GASB.main.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.sql.Timestamp;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Table(name = "workspace_config")
 public class WorkspaceConfig {
     @Id
     @Column(name = "id", nullable = false)
-    private int id; // This corresponds to id in OrgSaaS
+    private int id;
 
     @Column(name = "workspace_name", nullable = false, length = 100)
     private String workspaceName;
@@ -37,8 +36,26 @@ public class WorkspaceConfig {
     @Column(name = "register_date", nullable = false)
     private Timestamp registerDate;
 
+    // 이 부분 추가
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
     @OneToOne
     @MapsId
     @JoinColumn(name = "id")
     private OrgSaaS orgSaas;
+
+    // 빌더도 수정 필요
+    @Builder
+    public WorkspaceConfig(int id, String workspaceName, String saasAdminEmail, String token, String webhook, String alias, Timestamp registerDate, String refreshToken, OrgSaaS orgSaas) {
+        this.id = id;
+        this.workspaceName = workspaceName;
+        this.saasAdminEmail = saasAdminEmail;
+        this.token = token;
+        this.webhook = webhook;
+        this.alias = alias;
+        this.registerDate = registerDate;
+        this.refreshToken = refreshToken;
+        this.orgSaas = orgSaas;
+    }
 }
