@@ -23,12 +23,14 @@ public class MainInfoService {
     private final MonitoredUsersRepo monitoredUsersRepo;
     private final OrgSaaSRepo orgSaaSRepo;
     private final AlertSettingsRepo alertSettingsRepo;
+    private final PolicyRepo policyRepo;
 
-    public MainInfoService(FileUploadRepo fileUploadRepo, MonitoredUsersRepo monitoredUsersRepo, OrgSaaSRepo orgSaaSRepo, AlertSettingsRepo alertSettingsRepo){
+    public MainInfoService(FileUploadRepo fileUploadRepo, MonitoredUsersRepo monitoredUsersRepo, OrgSaaSRepo orgSaaSRepo, AlertSettingsRepo alertSettingsRepo, PolicyRepo policyRepo){
         this.fileUploadRepo = fileUploadRepo;
         this.monitoredUsersRepo = monitoredUsersRepo;
         this.orgSaaSRepo = orgSaaSRepo;
         this.alertSettingsRepo = alertSettingsRepo;
+        this.policyRepo = policyRepo;
     }
 
     public MainInfoDto getInfo(long orgId){
@@ -59,55 +61,17 @@ public class MainInfoService {
         return fileUploadRepo.countFileByOrgId(orgId);
     }
 
-//    public int increasedFile(long orgId) {
-//        LocalDate today = LocalDate.now();
-//        LocalDate yesterday = today.minusDays(1);
-//
-//        int countUntilYesterday = fileUploadRepo.getTotalCountUntil(orgId, yesterday);
-//        int countUntilToday = fileUploadRepo.getTotalCountUntil(orgId, today);
-//
-//        return countUntilToday - countUntilYesterday;
-//    }
-
     private long totalFileSizeCount(long orgId) {
         return fileUploadRepo.getTotalSizeByOrgId(orgId);
     }
 
-//    public long increasedFileSize(long orgId) {
-//        LocalDate today = LocalDate.now();
-//        LocalDate yesterday = today.minusDays(1);
-//
-//        long sizeUntilYesterday = fileUploadRepo.getTotalSizeUntil(orgId, yesterday);
-//        long sizeUntilToday = fileUploadRepo.getTotalSizeUntil(orgId, today);
-//
-//        return sizeUntilToday - sizeUntilYesterday;
-//    }
-
     private int totalDlpCount(long orgId) {
-        return fileUploadRepo.countDlpIssuesByOrgId(orgId);
+        return policyRepo.countPolicyByOrgId(orgId);
     }
 
     private int totalUsersCount(long orgId){
         return monitoredUsersRepo.getTotalUserCount(orgId);
     }
-
-//    private List<AdminInfo> getAdmin(long orgId){
-//        List<AdminUsers> adminUsers = adminUsersRepo.findAllByOrgId(orgId);
-//        return adminUsers.stream()
-//                .map(this::getAdminInfo)
-//                .filter(Objects::nonNull)
-//                .toList();
-//    }
-
-//    private AdminInfo getAdminInfo(AdminUsers adminUsers){
-//        return AdminInfo.builder()
-//                .org(adminUsers.getOrg().getOrgName())
-//                .firstName(adminUsers.getFirstName())
-//                .lastName(adminUsers.getLastName())
-//                .email(adminUsers.getEmail())
-//                .lastLogin(adminUsers.getLastLogin())
-//                .build();
-//    }
 
     private List<SaaSInfo> getSaaS(long orgId){
         List<OrgSaaS> orgSaaSList = orgSaaSRepo.findAllByOrgId(orgId);
@@ -134,22 +98,6 @@ public class MainInfoService {
                 .toList();
     }
 
-//    private FileSizeBySaaS getFileSize(String saasName, long orgId){
-//        LocalDate today = LocalDate.now();
-//        LocalDate yesterday = today.minusDays(1);
-//
-//        long totalSizeUntilYesterday = fileUploadRepo.getTotalSizeUntilByOrgAndSaaS(orgId, saasName, yesterday);
-//        long totalSizeUntilToday = fileUploadRepo.getTotalSizeUntilByOrgAndSaaS(orgId, saasName, today);
-//
-//        long dailyDifference = totalSizeUntilToday - totalSizeUntilYesterday;
-//
-//        return FileSizeBySaaS.builder()
-//                .saas(saasName)
-//                .size(totalSizeUntilToday)
-//                .dailyDifference(dailyDifference)
-//                .build();
-//    }
-
     private List<FileUploadBySaaS> getFileUploadBySaaS(long orgId){
         List<String> saasNameList = orgSaaSRepo.findDistinctSaaSByOrgId(orgId);
 
@@ -158,23 +106,6 @@ public class MainInfoService {
                 .filter(Objects::nonNull)
                 .toList();
     }
-
-//    private FileUploadBySaaS getFileUpload(String saasName, long orgId){
-//        LocalDate today = LocalDate.now();
-//        LocalDate yesterday = today.minusDays(1);
-//
-//        int totalUploadUntilYesterday = fileUploadRepo.getTotalUploadUntilByOrgAndSaaS(orgId, saasName, yesterday);
-//        int totalUploadUntilToday = fileUploadRepo.getTotalUploadUntilByOrgAndSaaS(orgId, saasName, today);
-//
-//        int dailyDifference = totalUploadUntilToday - totalUploadUntilYesterday;
-//
-//        return  FileUploadBySaaS.builder()
-//                .saas(saasName)
-//                .upload(totalUploadUntilToday)
-//                .dailyDifference(dailyDifference)
-//                .build();
-//
-//    }
 
     public int increasedFile(long orgId) {
         LocalDateTime endOfYesterday = LocalDate.now().minusDays(1).atTime(LocalTime.MAX); // 어제 23:59:59
