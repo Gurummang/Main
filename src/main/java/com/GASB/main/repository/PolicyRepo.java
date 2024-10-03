@@ -11,9 +11,9 @@ import java.util.List;
 @Repository
 public interface PolicyRepo extends JpaRepository<Policy, Long> {
 
-    @Query("SELECT p.policyName FROM Policy p WHERE p.id= :id")
-    String findPolicyNameById(@Param("id")long id);
-
     @Query("SELECT p FROM Policy p WHERE p.orgSaaS.org.id = :orgId")
     List<Policy> findAllByOrgId(@Param("orgId") long orgId);
+
+    @Query("SELECT COUNT(p) FROM Policy p WHERE p.orgSaaS.org.id = :orgId")
+    int countPolicyByOrgId(@Param("orgId")long orgId);
 }
