@@ -65,7 +65,7 @@ public class MainStatisticsService {
         if (activities == null) {
             log.debug("No Activities found for fileUpload id: {}", fileUpload.getId());
         }
-
+        log.info("uploadId:{} storedFileId:{} filename:{}", fileUpload.getId(), storedFile.getId(), activities.getFileName());
         String creator = Optional.ofNullable(activities)
                 .map(Activities::getUser)
                 .map(MonitoredUsers::getUserName)
@@ -100,6 +100,7 @@ public class MainStatisticsService {
     }
 
     private int isSensitive(StoredFile storedFile, List<DlpReport> dlpReports) {
+        log.info("dlp:{}", storedFile.getFileStatus().getDlpStatus());
         if (storedFile.getFileStatus().getDlpStatus() == 1) {
             long storedFileId = storedFile.getId();
 
@@ -115,7 +116,7 @@ public class MainStatisticsService {
             }
         }
 
-        return storedFile.getFileStatus().getGscanStatus();
+        return storedFile.getFileStatus().getDlpStatus();
     }
 
     private Activities getActivities(String saasFileId, LocalDateTime timestamp) {
