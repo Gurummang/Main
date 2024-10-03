@@ -66,8 +66,6 @@ public class MainStatisticsService {
             log.debug("No Activities found for fileUpload id: {}", fileUpload.getId());
         }
 
-        LocalDateTime adjustedTimestamp = fileUpload.getTimestamp().minusHours(9);
-
         String creator = Optional.ofNullable(activities)
                 .map(Activities::getUser)
                 .map(MonitoredUsers::getUserName)
@@ -80,7 +78,7 @@ public class MainStatisticsService {
                 .vt(isMalware(storedFile))
                 .dlp(isSensitive(storedFile, dlpReports))
                 .creator(creator)
-                .eventTs(adjustedTimestamp)
+                .eventTs(fileUpload.getTimestamp())
                 .build();
     }
 
