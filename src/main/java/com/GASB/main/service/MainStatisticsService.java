@@ -59,12 +59,17 @@ public class MainStatisticsService {
     }
 
     private FileScanDto createFileListDto(FileUpload fileUpload, List<DlpReport> dlpReports) {
+        if (dlpReports == null) {
+            dlpReports = Collections.emptyList();  // 빈 리스트로 초기화
+        }
+
         StoredFile storedFile = fileUpload.getStoredFile();
 
         Activities activities = getActivities(fileUpload.getSaasFileId(), fileUpload.getTimestamp());
         if (activities == null) {
             log.debug("No Activities found for fileUpload id: {}", fileUpload.getId());
         }
+
         log.info("uploadId:{} storedFileId:{} filename:{}", fileUpload.getId(), storedFile.getId(), activities.getFileName());
         String creator = Optional.ofNullable(activities)
                 .map(Activities::getUser)
@@ -100,6 +105,10 @@ public class MainStatisticsService {
     }
 
     private int isSensitive(StoredFile storedFile, List<DlpReport> dlpReports) {
+        if (dlpReports == null) {
+            dlpReports = Collections.emptyList();
+        }
+
         log.info("dlp:{}", storedFile.getFileStatus().getDlpStatus());
         if (storedFile.getFileStatus().getDlpStatus() == 1) {
             long storedFileId = storedFile.getId();
