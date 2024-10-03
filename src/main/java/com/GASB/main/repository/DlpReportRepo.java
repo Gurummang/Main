@@ -13,4 +13,7 @@ public interface DlpReportRepo extends JpaRepository<DlpReport, Long> {
 
     @Query("SELECT d FROM DlpReport d JOIN d.storedFile s WHERE d.policy.orgSaaS.org.id = :orgId")
     List<DlpReport> findAllDlpReportsByOrg(@Param("orgId") long orgId);
+
+    @Query("SELECT d FROM DlpReport d JOIN d.storedFile s WHERE d.policy.orgSaaS.org.id = :orgId")
+    List<DlpReport> findAllDlpReportsByOrgId(@Param("orgId") long orgId);
 }
