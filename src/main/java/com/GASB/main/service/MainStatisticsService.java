@@ -3,6 +3,7 @@ package com.GASB.main.service;
 import com.GASB.main.model.dto.statistics.*;
 import com.GASB.main.model.entity.*;
 import com.GASB.main.repository.ActivitiesRepo;
+import com.GASB.main.repository.DlpReportRepo;
 import com.GASB.main.repository.FileUploadRepo;
 import com.GASB.main.repository.OrgSaaSRepo;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +24,13 @@ public class MainStatisticsService {
     private static final String UNKNOWN = "Unknown";
 
     private final FileUploadRepo fileUploadRepo;
+    private final DlpReportRepo dlpReportRepo;
     private final ActivitiesRepo activitiesRepo;
     private final OrgSaaSRepo orgSaaSRepo;
 
-    public MainStatisticsService(FileUploadRepo fileUploadRepo, ActivitiesRepo activitiesRepo, OrgSaaSRepo orgSaaSRepo){
+    public MainStatisticsService(FileUploadRepo fileUploadRepo, DlpReportRepo dlpReportRepo, ActivitiesRepo activitiesRepo, OrgSaaSRepo orgSaaSRepo){
         this.fileUploadRepo = fileUploadRepo;
+        this.dlpReportRepo = dlpReportRepo;
         this.activitiesRepo = activitiesRepo;
         this.orgSaaSRepo = orgSaaSRepo;
     }
@@ -41,31 +44,19 @@ public class MainStatisticsService {
                 .build();
     }
 
-    @SuppressWarnings("unchecked")
     private List<FileScanDto> getFileScan(long orgId) {
         LocalDate today = LocalDate.now();
+        List<FileUpload> fileUploads = fileUploadRepo.findAllByOrgIdAndDate(orgId, today);
+        List<DlpReport> allDlpReports = dlpReportRepo.findAllDlpReportsByOrgId(orgId);
 
-        List<Object[]> fileUploadsWithDlpReports = fileUploadRepo.findFileUploadsWithDlpReports(orgId, today);
+        Map<Long, List<DlpReport>> dlpReportsMap = allDlpReports.stream()
+                .collect(Collectors.groupingBy(report -> report.getStoredFile().getId()));
 
-        // FileUpload를 키로, DlpReport 리스트를 값으로 변환
-        Map<FileUpload, List<DlpReport>> fileToDlpReports = new HashMap<>();
-        for (Object[] result : fileUploadsWithDlpReports) {
-            FileUpload fileUpload = (FileUpload) result[0];
-            DlpReport dlpReport = (DlpReport) result[1];
-
-            // Map에 FileUpload를 키로 DlpReport를 리스트로 추가
-            fileToDlpReports
-                    .computeIfAbsent(fileUpload, k -> new ArrayList<>())
-                    .add(dlpReport);
-        }
-
-        // 각 FileUpload에 대해 중복되지 않는 FileScanDto 생성
-        return fileToDlpReports.entrySet().stream()
-                .map(entry -> createFileListDto(entry.getKey(), entry.getValue()))
+        return fileUploads.stream()
+                .map(fileUpload -> createFileListDto(fileUpload, dlpReportsMap.get(fileUpload.getStoredFile().getId()))) // fileUpload.getStoredFile().getId()로 가져오기
                 .filter(Objects::nonNull)
                 .toList();
     }
-
 
     private FileScanDto createFileListDto(FileUpload fileUpload, List<DlpReport> dlpReports) {
         StoredFile storedFile = fileUpload.getStoredFile();

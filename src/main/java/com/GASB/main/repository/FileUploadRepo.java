@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -59,32 +60,41 @@ public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
 
     @Query("SELECT COUNT(fu) FROM FileUpload fu " +
             "JOIN fu.orgSaaS os " +
-            "WHERE fu.deleted = false AND os.org.id = :orgId AND DATE(fu.timestamp) <= :endDate")
-    int getTotalCountUntil(@Param("orgId") long orgId, @Param("endDate") LocalDate endDate);
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND fu.timestamp <= :endDate")
+    int getTotalCountUntil(@Param("orgId") long orgId, @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT COALESCE(SUM(sf.size), 0) FROM FileUpload fu " +
             "JOIN StoredFile sf ON fu.hash = sf.saltedHash " +
             "JOIN fu.orgSaaS os " +
-            "WHERE fu.deleted = false AND os.org.id = :orgId AND DATE(fu.timestamp) <= :endDate")
-    long getTotalSizeUntil(@Param("orgId") long orgId, @Param("endDate") LocalDate endDate);
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND fu.timestamp <= :endDate")
+    long getTotalSizeUntil(@Param("orgId") long orgId, @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT COALESCE(SUM(sf.size), 0) FROM FileUpload fu " +
             "JOIN StoredFile sf ON fu.hash = sf.saltedHash " +
             "JOIN fu.orgSaaS os " +
-            "WHERE fu.deleted = false AND os.org.id = :orgId AND os.saas.saasName = :saasName AND DATE(fu.timestamp) <= :endDate")
-    long getTotalSizeUntilByOrgAndSaaS(@Param("orgId") long orgId, @Param("saasName") String saasName, @Param("endDate") LocalDate endDate);
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND os.saas.saasName = :saasName AND fu.timestamp <= :endDate")
+    long getTotalSizeUntilByOrgAndSaaS(@Param("orgId") long orgId, @Param("saasName") String saasName, @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT COUNT(fu) FROM FileUpload fu " +
             "JOIN fu.orgSaaS os " +
-            "WHERE fu.deleted = false AND os.org.id = :orgId AND os.saas.saasName = :saasName AND DATE(fu.timestamp) <= :endDate")
-    int getTotalUploadUntilByOrgAndSaaS(@Param("orgId") long orgId, @Param("saasName") String saasName, @Param("endDate") LocalDate endDate);
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND os.saas.saasName = :saasName AND fu.timestamp <= :endDate")
+    int getTotalUploadUntilByOrgAndSaaS(@Param("orgId") long orgId, @Param("saasName") String saasName, @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT fu FROM FileUpload fu " +
             "JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
-            "WHERE fu.deleted = false AND DATE(fu.timestamp) = :date AND os.org.id = :orgId")
-    List<FileUpload> findAllByOrgAndDate(@Param("orgId") long orgId, @Param("date") LocalDate date);
+            "WHERE fu.deleted = false AND fu.timestamp = :date AND os.org.id = :orgId")
+    List<FileUpload> findAllByOrgAndDate(@Param("orgId") long orgId, @Param("date") LocalDateTime date);
 
-    @Query("SELECT fu, dr FROM FileUpload fu LEFT JOIN DlpReport dr ON fu.storedFile.id = dr.storedFile.id WHERE fu.orgSaaS.org.Id = :orgId AND DATE(fu.timestamp) = :date GROUP BY fu")
-    List<Object[]> findFileUploadsWithDlpReports(@Param("orgId") long orgId, @Param("date") LocalDate date);
+    @Query("SELECT fu, dr FROM FileUpload fu " +
+            "JOIN DlpReport dr ON fu.storedFile.id = dr.storedFile.id " +
+            "WHERE fu.orgSaaS.org.id = :orgId " +
+            "AND fu.deleted = false " +
+            "AND DATE(fu.timestamp) = :date " +
+            "GROUP BY fu")
+    List<Object[]> findFilesByAdjustedDate(@Param("orgId") long orgId, @Param("date") LocalDate date);
 
+    @Query("SELECT fu FROM FileUpload fu " +
+            "JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
+            "WHERE fu.deleted = false AND os.org.id = :orgId AND DATE(fu.timestamp) = :date")
+    List<FileUpload> findAllByOrgIdAndDate(@Param("orgId") long orgId, @Param("date") LocalDate date);
 }
