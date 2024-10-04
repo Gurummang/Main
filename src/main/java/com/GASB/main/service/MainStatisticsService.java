@@ -70,7 +70,6 @@ public class MainStatisticsService {
             log.debug("No Activities found for fileUpload id: {}", fileUpload.getId());
         }
 
-        log.info("uploadId:{} storedFileId:{} filename:{}", fileUpload.getId(), storedFile.getId(), activities.getFileName());
         String creator = Optional.ofNullable(activities)
                 .map(Activities::getUser)
                 .map(MonitoredUsers::getUserName)
@@ -109,7 +108,6 @@ public class MainStatisticsService {
             dlpReports = Collections.emptyList();
         }
 
-        log.info("dlp:{}", storedFile.getFileStatus().getDlpStatus());
         if (storedFile.getFileStatus().getDlpStatus() == 1) {
             long storedFileId = storedFile.getId();
 
