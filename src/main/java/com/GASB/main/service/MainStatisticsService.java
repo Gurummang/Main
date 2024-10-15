@@ -64,6 +64,7 @@ public class MainStatisticsService {
         }
 
         StoredFile storedFile = fileUpload.getStoredFile();
+        DlpStat dlpStat = fileUpload.getDlpStat();
 
         Activities activities = getActivities(fileUpload.getSaasFileId(), fileUpload.getTimestamp());
         if (activities == null) {
@@ -80,7 +81,7 @@ public class MainStatisticsService {
                 .fileName(activities != null ? activities.getFileName() : UNKNOWN)
                 .suspicious(isSuspicious(fileUpload, storedFile))
                 .vt(isMalware(storedFile))
-                .dlp(isSensitive(storedFile, dlpReports))
+                .dlp(isSensitive(dlpStat, storedFile, dlpReports))
                 .creator(creator)
                 .eventTs(fileUpload.getTimestamp())
                 .build();
@@ -103,12 +104,12 @@ public class MainStatisticsService {
         return storedFile.getFileStatus().getGscanStatus();
     }
 
-    private int isSensitive(StoredFile storedFile, List<DlpReport> dlpReports) {
+    private int isSensitive(DlpStat dlpStat, StoredFile storedFile, List<DlpReport> dlpReports) {
         if (dlpReports == null) {
             dlpReports = Collections.emptyList();
         }
 
-        if (storedFile.getFileStatus().getDlpStatus() == 1) {
+        if (dlpStat.getDlpStatus() == 1) {
             long storedFileId = storedFile.getId();
 
             List<DlpReport> relatedReports = dlpReports.stream()
@@ -123,7 +124,7 @@ public class MainStatisticsService {
             }
         }
 
-        return storedFile.getFileStatus().getDlpStatus();
+        return dlpStat.getDlpStatus();
     }
 
     private Activities getActivities(String saasFileId, LocalDateTime timestamp) {
