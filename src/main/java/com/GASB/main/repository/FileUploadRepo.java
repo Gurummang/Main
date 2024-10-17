@@ -40,9 +40,9 @@ public interface FileUploadRepo extends JpaRepository<FileUpload, Long> {
 
     @Query("SELECT COUNT(fu.id) " +
         "FROM FileUpload fu " +
-        "LEFT JOIN fu.storedFile sf " +
+        "LEFT JOIN fu.dlpStat ds " +
         "LEFT JOIN OrgSaaS os ON fu.orgSaaS.id = os.id " +
-        "WHERE fu.deleted = false AND sf.fileStatus.dlpStatus = 1 AND os.org.id = :orgId")
+        "WHERE fu.deleted = false AND ds.dlpStatus = 1 AND os.org.id = :orgId")
     int countDlpFileByOrgId(@Param("orgId") long orgId);
 
     @Query("SELECT COUNT(fu.id) " +
